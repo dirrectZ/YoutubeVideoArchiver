@@ -5,6 +5,7 @@ from tkinter import filedialog
 import pytube
 import scrapetube
 
+
 class App(tkinter.Tk):
 	def __init__(self):
 		super().__init__()
@@ -39,12 +40,14 @@ class MainFrame(tkinter.Frame):
 		
 		self.entry_location = tkinter.Entry(self.frame_location, textvariable=self.location, font=("", 18))
 		self.entry_location.grid(row=0, column=0, sticky="nsew")
-		self.entry_location.bind("<FocusIn>", self.location_focus)
+		# self.entry_location.bind("<FocusIn>", self.location_focus)
+		self.location_button = tkinter.Button(self.frame_location, command=self.location_change, bitmap='questhead')
+		self.location_button.grid(row=0, column=1)
 		
 		self.start_button = tkinter.Button(self, text="START", command=self.download_videos, font=("", 20))
 		self.start_button.grid(row=2, column=0, pady=(20, 0))
 		
-	def location_focus(self, ev):
+	def location_change(self):
 		new_dir = filedialog.askdirectory(initialdir=self.location.get())
 		if new_dir:
 			self.location.set(new_dir)
