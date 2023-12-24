@@ -1,10 +1,8 @@
-import datetime
+import functools
 import json
 import os.path
-import time
 import tkinter
 from tkinter import filedialog
-from tkinter import ttk
 import pytube
 import scrapetube
 import unidecode
@@ -47,12 +45,14 @@ class MainFrame(tkinter.Frame):
 		
 		self.entry_location = tkinter.Entry(self.frame_location, textvariable=self.location, font=("", 18))
 		self.entry_location.grid(row=0, column=0, sticky="nsew")
-		# self.entry_location.bind("<FocusIn>", self.location_focus)
 		self.location_button = tkinter.Button(self.frame_location, command=self.location_change, bitmap='questhead')
 		self.location_button.grid(row=0, column=1)
 		
-		self.start_button = tkinter.Button(self, text="START", command=self.download_videos, font=("", 20))
+		self.start_button = tkinter.Button(self, text="START", command=self.start_downloading, font=("", 20))
 		self.start_button.grid(row=2, column=0, pady=(20, 0))
+
+		self.lmao = tkinter.StringVar(value="1")
+		tkinter.Label(textvariable=self.lmao).grid(row=3, column=0)
 
 		
 	def location_change(self):
@@ -60,40 +60,52 @@ class MainFrame(tkinter.Frame):
 		if new_dir:
 			self.location.set(new_dir)
 			
-	def download_videos(self):
+	def start_downloading(self):
 		
 		channel_url = self.channel_link.get()
 		output_dir = self.location.get()
+		self.video_number = 0
 
 		videos = scrapetube.get_channel(channel_url=channel_url)
 		if output_dir:
 			
 			for v in videos:
-				print("ok")
-				link = f"https://www.youtube.com/watch?v={v['videoId']}"
-				try:
-					yt_video = pytube.YouTube(link)
-					video_title = yt_video.title
-					title = self.legal_title(video_title)
-					
-					self.naming_dict[video_title] = title
-					
-					date = yt_video.publish_date
-					string_date = str(date).split()[0]
-					
-					stream = yt_video.streams.get_by_itag(22)
-					video_name = f"{title}_{string_date}.mp4"
-					video_location = os.path.join(output_dir, video_name)
-					
-					if not os.path.exists(video_location):
-						stream.download(output_path=output_dir, filename=video_name)
-				except:
-					self.errors.append(link)
+				v_to_download = functools.partial(self.download_video, v, output_dir)
+				self.after_idle(v_to_download)
 				
-				self.write_files(output_dir)
-
 			self.write_files(output_dir)
-		
+			
+	def download_video(self, video, location):
+		link = f"https://www.youtube.com/watch?v={video['videoId']}"
+		try:
+			yt_video = pytube.YouTube(link)
+			video_title = yt_video.title
+			title = self.legal_title(video_title)
+			
+			self.naming_dict[video_title] = title
+			
+			date = yt_video.publish_date
+			string_date = str(date).split()[0]
+			
+			stream = yt_video.streams.get_by_itag(22)
+			video_name = f"{title}_{string_date}.mp4"
+			video_location = os.path.join(location, video_name)
+			self.lmao.set(title)
+			self.video_number += 1
+			
+			if not os.path.exists(video_location):
+				stream.download(output_path=location, filename=video_name)
+				
+			if self.video_number % 50 == 0:
+				self.write_files(location)
+				
+		except:
+			self.errors.append(link)
+			self.write_files(location)
+			
+	def update_label(self):
+		self.lmao.set(str(self.video_number))
+			
 	def write_files(self, location):
 		with open(os.path.join(location, "errors.txt"), "w") as errors_file:
 			for e in self.errors:
@@ -101,7 +113,10 @@ class MainFrame(tkinter.Frame):
 				
 		with open(os.path.join(location, "naming.txt"), "w") as naming_file:
 			for name in self.naming_dict:
-				print(f"{name} {5*'-'} {self.naming_dict[name]}", file=naming_file)
+				try:
+					print(f"{name} {5*'-'} {self.naming_dict[name]}", file=naming_file)
+				except:
+					print(f"{name} {5*'-'} NAME NOT FOUND", file=naming_file)
 				
 		with open(os.path.join(location, "naming.json"), "w") as naming_json:
 			json.dump(self.naming_dict, naming_json)
