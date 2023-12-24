@@ -103,13 +103,6 @@ class MainFrame(tkinter.Frame):
 			for e in self.errors:
 				print(e, file=errors_file)
 				
-		with open(os.path.join(location, "naming.txt"), "w") as naming_file:
-			for name in self.naming_dict:
-				try:
-					print(f"{name} {5*'-'} {self.naming_dict[name]}", file=naming_file)
-				except:
-					print(f"{name} {5*'-'} NAME NOT FOUND", file=naming_file)
-				
 		with open(os.path.join(location, "naming.json"), "w") as naming_json:
 			json.dump(self.naming_dict, naming_json)
 	
