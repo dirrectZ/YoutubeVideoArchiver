@@ -38,6 +38,6 @@ exe = EXE(
 app = BUNDLE(
     exe,
     name='YoutubeVideoArchiver.app',
-    icon='icon.icns',
+    icon='icon.png',
     bundle_identifier=None,
 )
