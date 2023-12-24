@@ -61,6 +61,7 @@ class MainFrame(tkinter.Frame):
 		channel_url = self.channel_link.get()
 		output_dir = self.location.get()
 		self.video_number = 0
+		self.num_of_videos = 0
 
 		videos = scrapetube.get_channel(channel_url=channel_url)
 		if output_dir:
@@ -68,6 +69,7 @@ class MainFrame(tkinter.Frame):
 			for v in videos:
 				v_to_download = functools.partial(self.download_video, v, output_dir)
 				self.after_idle(v_to_download)
+				self.video_number += 1
 				
 			self.write_files(output_dir)
 			
@@ -92,6 +94,9 @@ class MainFrame(tkinter.Frame):
 				stream.download(output_path=location, filename=video_name)
 				
 			if self.video_number % 50 == 0:
+				self.write_files(location)
+				
+			if self.video_number == self.num_of_videos:
 				self.write_files(location)
 				
 		except:
