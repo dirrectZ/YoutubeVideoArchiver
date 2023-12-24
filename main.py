@@ -50,10 +50,6 @@ class MainFrame(tkinter.Frame):
 		
 		self.start_button = tkinter.Button(self, text="START", command=self.start_downloading, font=("", 20))
 		self.start_button.grid(row=2, column=0, pady=(20, 0))
-
-		self.lmao = tkinter.StringVar(value="1")
-		tkinter.Label(textvariable=self.lmao).grid(row=3, column=0)
-
 		
 	def location_change(self):
 		new_dir = filedialog.askdirectory(initialdir=self.location.get())
