@@ -86,7 +86,6 @@ class MainFrame(tkinter.Frame):
 			stream = yt_video.streams.get_by_itag(22)
 			video_name = f"{title}_{string_date}.mp4"
 			video_location = os.path.join(location, video_name)
-			self.lmao.set(title)
 			self.video_number += 1
 			
 			if not os.path.exists(video_location):
@@ -98,9 +97,6 @@ class MainFrame(tkinter.Frame):
 		except:
 			self.errors.append(link)
 			self.write_files(location)
-			
-	def update_label(self):
-		self.lmao.set(str(self.video_number))
 			
 	def write_files(self, location):
 		with open(os.path.join(location, "errors.txt"), "w") as errors_file:
