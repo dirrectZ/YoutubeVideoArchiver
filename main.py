@@ -1,9 +1,13 @@
 import datetime
+import json
 import os.path
+import time
 import tkinter
 from tkinter import filedialog
+from tkinter import ttk
 import pytube
 import scrapetube
+import unidecode
 
 
 class App(tkinter.Tk):
@@ -22,6 +26,9 @@ class MainFrame(tkinter.Frame):
 		super().__init__()
 		self.channel_link = tkinter.StringVar()
 		self.location = tkinter.StringVar()
+	
+		self.errors = []
+		self.naming_dict = {}
 		
 		self.columnconfigure(0, weight=1)
 		
@@ -46,6 +53,7 @@ class MainFrame(tkinter.Frame):
 		
 		self.start_button = tkinter.Button(self, text="START", command=self.download_videos, font=("", 20))
 		self.start_button.grid(row=2, column=0, pady=(20, 0))
+
 		
 	def location_change(self):
 		new_dir = filedialog.askdirectory(initialdir=self.location.get())
@@ -55,20 +63,61 @@ class MainFrame(tkinter.Frame):
 	def download_videos(self):
 		
 		channel_url = self.channel_link.get()
-		title = str(datetime.datetime.utcnow())
-		output_dir = os.path.join(self.location.get(), title)
+		output_dir = self.location.get()
 
 		videos = scrapetube.get_channel(channel_url=channel_url)
 		if output_dir:
-			try:
-				for v in videos:
-					link = f"https://www.youtube.com/watch?v={v['videoId']}"
-					yt_video = pytube.YouTube(link)
-					stream = yt_video.streams.get_by_itag(22)
-					stream.download(output_path=output_dir, filename=f"{yt_video.title}.mp4")
-			except:
-				pass
 			
+			for v in videos:
+				print("ok")
+				link = f"https://www.youtube.com/watch?v={v['videoId']}"
+				try:
+					yt_video = pytube.YouTube(link)
+					video_title = yt_video.title
+					title = self.legal_title(video_title)
+					
+					self.naming_dict[video_title] = title
+					
+					date = yt_video.publish_date
+					string_date = str(date).split()[0]
+					
+					stream = yt_video.streams.get_by_itag(22)
+					video_name = f"{title}_{string_date}.mp4"
+					video_location = os.path.join(output_dir, video_name)
+					
+					if not os.path.exists(video_location):
+						stream.download(output_path=output_dir, filename=video_name)
+				except:
+					self.errors.append(link)
+				
+				self.write_files(output_dir)
+
+			self.write_files(output_dir)
+		
+	def write_files(self, location):
+		with open(os.path.join(location, "errors.txt"), "w") as errors_file:
+			for e in self.errors:
+				print(e, file=errors_file)
+				
+		with open(os.path.join(location, "naming.txt"), "w") as naming_file:
+			for name in self.naming_dict:
+				print(f"{name} {5*'-'} {self.naming_dict[name]}", file=naming_file)
+				
+		with open(os.path.join(location, "naming.json"), "w") as naming_json:
+			json.dump(self.naming_dict, naming_json)
+	
+	@staticmethod
+	def legal_title(title):
+		title = unidecode.unidecode(title)
+		ILLEGAL_CHARACTERS = r'<>:"/\|?*'
+		
+		new_title = ""
+		for c in title:
+			if c not in ILLEGAL_CHARACTERS:
+				new_title += c
+				
+		return new_title
+		
 		
 if __name__ == "__main__":
 	app = App()
